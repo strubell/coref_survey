@@ -246,14 +246,13 @@ class Document(object):
     self.bert_tokenized = True
 
     # update clusters to index into tokenized
-    for max_len, (sents, _, subtoks_map, _) in self.tokenized_sentences.items():
-      for i, this_sent, in enumerate(sents):
-        this_subtoks_map = subtoks_map[i]
-        this_clusters = self.clusters[i]
-        print("Document {}".format(i))
-        print(this_sent)
+    for max_len, tokenized_sents in self.tokenized_sentences.items():
+      for idx, (this_toks, this_subtoks_map), in enumerate(zip(tokenized_sents.segments, tokenized_sents.subtokens_map)):
+        this_clusters = self.clusters[idx]
+        print("Document {}".format(idx))
+        print(this_toks)
         print(this_subtoks_map)
-        print(this_clusters )
+        print(this_clusters)
 
   def apply_dump_fn(self, function):
     return self.FN_MAP[function]()
