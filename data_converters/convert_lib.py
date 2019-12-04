@@ -267,14 +267,17 @@ class Document(object):
     for s in tokenized_sents.subtoken_map:
       offsets[s] += 1
     print("offsets 1: {}".format(offsets))
-    offsets = np.cumsum(offsets).tolist()
-    print("offsets 2: {}".format(offsets))
+    offsets_cumulative = np.cumsum(offsets).tolist()
+    print("offsets 2: {}".format(offsets_cumulative))
 
     new_clusters = []
     for c in self.clusters:
       new_c = []
       for m in c:
-        new_c.append([m[0] + offsets[m[0]], m[1] + offsets[m[1]]])
+        new_m = [m[0] + offsets_cumulative[m[0]], m[1] + offsets_cumulative[m[1]]]
+        if offsets[m[0]] > 0:
+          new_m[0] -= offsets[m[0]]
+        new_c.append(new_m)
       new_clusters.append(new_c)
 
     self.tokenized_clusters = new_clusters
