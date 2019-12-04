@@ -247,28 +247,11 @@ class Document(object):
     self.bert_tokenized = True
 
     # update clusters to index into tokenized
-    print("orig tokens: {}".format(self.token_sentences))
-    print("clusters: {}".format(self.clusters))
-
     tokenized_sents = self.tokenized_sentences[512]
-    # print("len segments", len(tokenized_sents.segments))
-    # for i, segment in enumerate(tokenized_sents.segments):
-    #   print("segment {}: {}".format(i, segment))
-    # print("subtoken map", tokenized_sents.subtoken_map)
-    # for idx, (this_toks, this_subtoks_map), in enumerate(zip(tokenized_sents.segments, tokenized_sents.subtoken_map)):
-    #   this_clusters = self.clusters[idx]
-    #   print("Document {}".format(idx))
-    #   print(this_toks)
-    #   print(this_subtoks_map)
-    #   print(this_clusters)
-    print("len", len(self.token_sentences))
-
     offsets = [-1] * sum(map(len, self.token_sentences))
     for s in tokenized_sents.subtoken_map:
       offsets[s] += 1
-    print("offsets 1: {}".format(offsets))
     offsets_cumulative = np.cumsum(offsets).tolist()
-    print("offsets 2: {}".format(offsets_cumulative))
 
     new_clusters = []
     for c in self.clusters:
@@ -281,9 +264,6 @@ class Document(object):
       new_clusters.append(new_c)
 
     self.tokenized_clusters = new_clusters
-    print("tokenized clusters: {}".format(self.tokenized_clusters))
-
-
 
   def apply_dump_fn(self, function):
     return self.FN_MAP[function]()

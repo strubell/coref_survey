@@ -99,9 +99,9 @@ def convert(data_home):
 
   convert_lib.create_processed_data_dir(output_directory)
   preco_datasets = {}
-  # for split in [convert_lib.DatasetSplit.train, convert_lib.DatasetSplit.dev,
-  #   convert_lib.DatasetSplit.test]:
-  for split in [convert_lib.DatasetSplit.dev]:
+  for split in [convert_lib.DatasetSplit.train, convert_lib.DatasetSplit.dev,
+    convert_lib.DatasetSplit.test]:
+  # for split in [convert_lib.DatasetSplit.dev]:
     input_filename = os.path.join(resplit_directory, split + "." +
         convert_lib.FormatName.jsonl)
     converted_dataset = create_dataset(input_filename)
@@ -109,9 +109,9 @@ def convert(data_home):
     preco_datasets[split] = converted_dataset
 
 
-  # mult_directory = output_directory.replace(PRECO, "preco_mult")
-  # convert_lib.create_processed_data_dir(mult_directory)
-  # for split, dataset in preco_datasets.items():
-  #   dataset.remove_singletons()
-  #   convert_lib.write_converted(dataset, mult_directory + "/" + split)
+  mult_directory = output_directory.replace(PRECO, "preco_mult")
+  convert_lib.create_processed_data_dir(mult_directory)
+  for split, dataset in preco_datasets.items():
+    dataset.remove_singletons()
+    convert_lib.write_converted(dataset, mult_directory + "/" + split)
     
