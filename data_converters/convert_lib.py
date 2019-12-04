@@ -262,7 +262,7 @@ class Document(object):
       #   print(this_clusters)
       print("len", len(self.token_sentences))
 
-      offsets = [0] * sum(map(len, self.token_sentences))
+      offsets = [-1] * sum(map(len, self.token_sentences))
       for s in tokenized_sents.subtoken_map:
         offsets[s] += 1
       print("offsets: {}".format(offsets))
