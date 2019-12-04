@@ -7,7 +7,7 @@ import json
 import os
 
 from bert import tokenization
-VOCAB_FILE = "/home/nnayak/spanbert-coref-fork/cased_config_vocab/vocab.txt"
+VOCAB_FILE = "/home/strubell/research/coref/cased_config_vocab/vocab.txt"
 TOKENIZER = tokenization.FullTokenizer(vocab_file=VOCAB_FILE, do_lower_case=False)
 
 class DatasetName(object):

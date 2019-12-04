@@ -1,8 +1,8 @@
 import sys
-import gap_converter
-import ontonotes_converter
+# import gap_converter
+# import ontonotes_converter
 import preco_converter
-import wikicoref_converter
+# import wikicoref_converter
 
 def main():
   data_home = sys.argv[1]
