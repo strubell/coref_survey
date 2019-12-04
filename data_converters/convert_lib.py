@@ -260,6 +260,11 @@ class Document(object):
       #   print(this_subtoks_map)
       #   print(this_clusters)
 
+      offsets = [0] * len(self.token_sentences)
+      for s in tokenized_sents.subtoken_map:
+        offsets[s] += 1
+      print("offsets: {}".format(offsets))
+
   def apply_dump_fn(self, function):
     return self.FN_MAP[function]()
 
