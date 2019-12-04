@@ -248,7 +248,9 @@ class Document(object):
     # update clusters to index into tokenized
     for max_len, tokenized_sents in self.tokenized_sentences.items():
       print("maxlen", max_len)
-      print("len segments", len(tokenized_sents.segments))
+      # print("len segments", len(tokenized_sents.segments))
+      for i, segment in enumerate(tokenized_sents.segments):
+        print("segment {}: {}".format(i, segment))
       print("subtoken map", tokenized_sents.subtoken_map)
       # for idx, (this_toks, this_subtoks_map), in enumerate(zip(tokenized_sents.segments, tokenized_sents.subtoken_map)):
       #   this_clusters = self.clusters[idx]
