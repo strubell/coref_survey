@@ -246,6 +246,7 @@ class Document(object):
     self.bert_tokenized = True
 
     # update clusters to index into tokenized
+    print("orig tokens: {}".format(self.token_sentences))
     print("clusters: {}".format(self.clusters))
     for max_len, tokenized_sents in self.tokenized_sentences.items():
       print("maxlen", max_len)
