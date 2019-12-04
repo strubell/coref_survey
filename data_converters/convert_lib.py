@@ -170,6 +170,8 @@ class Document(object):
 
     self.bert_tokenized = False
     self.tokenized_sentences = {}
+    self.tokenized_clusters = {}
+
 
     self.label_sequences = {}
     self.label_sequences_verified = False
@@ -210,9 +212,13 @@ class Document(object):
     coref_labels = self._get_conll_coref_labels()
     sent_start_tok_count = 0
 
-    mconll_lines = ["#begin document " + document_name + "\n"] 
+    orig_tokenized_sents = self.sentences
+    if self.bert_tokenized:
+      orig_tokenized_sents = self.token_sentences
 
-    for i_sent, sentence in enumerate(self.sentences):
+    mconll_lines = ["#begin document ({}); part {}\n".format(self.doc_id, self.doc_part)]
+
+    for i_sent, sentence in enumerate(orig_tokenized_sents):
       for i_tok, token in enumerate(sentence):
         coref_label_vals = coref_labels.get(sent_start_tok_count + i_tok)
         if not coref_label_vals:
@@ -224,7 +230,8 @@ class Document(object):
       sent_start_tok_count += len(sentence)
       mconll_lines.append("")
 
-    mconll_lines.append("\n#end document " + document_name + "\n")
+    # mconll_lines.append("\n#end document " + document_name + "\n")
+    mconll_lines.append("\n#end document\n")
 
     return mconll_lines
 
@@ -237,6 +244,16 @@ class Document(object):
       self.tokenized_sentences[max_segment_len] = TokenizedSentences(
         self.token_sentences, max_segment_len, self.speakers)
     self.bert_tokenized = True
+
+    # update clusters to index into tokenized
+    for max_len, (sents, _, subtoks_map, _) in self.tokenized_sentences.items():
+      for i, this_sent, in enumerate(sents):
+        this_subtoks_map = subtoks_map[i]
+        this_clusters = self.clusters[i]
+        print("Document {}".format(i))
+        print(this_sent)
+        print(this_subtoks_map)
+        print(this_clusters )
 
   def apply_dump_fn(self, function):
     return self.FN_MAP[function]()
@@ -260,8 +277,15 @@ class Document(object):
         new_clusters.append(cluster)
     self.clusters = new_clusters
 
+  def convert_clusters_bert(self):
+    orig_clusters = self.clusters
+    orig_tokens = self.token_sentences
+    bert_tokens = self.sentences
+
+
   def dump_to_jsonl(self, max_segment_len):
     assert self.bert_tokenized
+
     return [json.dumps({
           "doc_key": self.doc_id + "_" + self.doc_part,
           "document_id": self.doc_id + "_" + self.doc_part,
@@ -270,7 +294,7 @@ class Document(object):
           "sentence_map": self.tokenized_sentences[max_segment_len].sentence_map,
           "subtoken_map": self.tokenized_sentences[max_segment_len].subtoken_map,
           "speakers": self.tokenized_sentences[max_segment_len].speakers,
-          "clusters": self.clusters,
+          "clusters": self.tokenized_clusters[max_segment_len],
           "parse_spans": self.parse_spans,
           "pos": self.pos
         })]

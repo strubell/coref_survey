@@ -12,8 +12,8 @@ def main():
   preco_converter.convert(data_home) 
   #print("Wikicoref")
   #wikicoref_converter.convert(data_home) 
-  print("Ontonotes")
-  ontonotes_converter.convert(data_home) 
+  # print("Ontonotes")
+  # ontonotes_converter.convert(data_home)
 
 
 if __name__ == "__main__":
