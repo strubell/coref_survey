@@ -274,8 +274,6 @@ class Document(object):
     self.clusters = new_clusters
 
   def convert_clusters_bert(self, max_segment_len):
-    assert self.bert_tokenized
-
     # update clusters to index into tokenized
     # todo not totally clear to me why this is max-seg-length-dependent?
     offsets = [-1] * sum(map(len, self.token_sentences))
