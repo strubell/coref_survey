@@ -243,28 +243,29 @@ class Document(object):
   def _bert_tokenize(self):
     self.token_sentences = self.sentences
     for max_segment_len in [128, 384, 512]:
-      self.tokenized_sentences[max_segment_len] = TokenizedSentences(
+      tokenized_sents = TokenizedSentences(
         self.token_sentences, max_segment_len, self.speakers)
+      self.tokenized_sentences[max_segment_len] = tokenized_sents
+
+      # update clusters to index into tokenized
+      offsets = [-1] * sum(map(len, self.token_sentences))
+      for s in tokenized_sents.subtoken_map:
+        offsets[s] += 1
+      offsets_cumulative = np.cumsum(offsets).tolist()
+
+      new_clusters = []
+      for c in self.clusters:
+        new_c = []
+        for m in c:
+          new_m = [m[0] + offsets_cumulative[m[0]], m[1] + offsets_cumulative[m[1]]]
+          if offsets[m[0]] > 0:
+            new_m[0] -= offsets[m[0]]
+          new_c.append(new_m)
+        new_clusters.append(new_c)
+
+      self.tokenized_clusters[max_segment_len] = new_clusters
     self.bert_tokenized = True
 
-    # update clusters to index into tokenized
-    tokenized_sents = self.tokenized_sentences[128]
-    offsets = [-1] * sum(map(len, self.token_sentences))
-    for s in tokenized_sents.subtoken_map:
-      offsets[s] += 1
-    offsets_cumulative = np.cumsum(offsets).tolist()
-
-    new_clusters = []
-    for c in self.clusters:
-      new_c = []
-      for m in c:
-        new_m = [m[0] + offsets_cumulative[m[0]], m[1] + offsets_cumulative[m[1]]]
-        if offsets[m[0]] > 0:
-          new_m[0] -= offsets[m[0]]
-        new_c.append(new_m)
-      new_clusters.append(new_c)
-
-    self.tokenized_clusters = new_clusters
 
   def apply_dump_fn(self, function):
     return self.FN_MAP[function]()
@@ -305,7 +306,7 @@ class Document(object):
           "sentence_map": self.tokenized_sentences[max_segment_len].sentence_map,
           "subtoken_map": self.tokenized_sentences[max_segment_len].subtoken_map,
           "speakers": self.tokenized_sentences[max_segment_len].speakers,
-          "clusters": self.tokenized_clusters,
+          "clusters": self.tokenized_clusters[max_segment_len],
           "parse_spans": self.parse_spans,
           "pos": self.pos
         })]
