@@ -80,8 +80,9 @@ class Dataset(object):
     self._dump_lines("feat", file_handle)
 
   def dump_to_jsonl(self, max_segment_len, file_handle):
-    if not self.bert_tokenized:
-      self._bert_tokenize()
+    # if not self.bert_tokenized:
+    #   self._bert_tokenize()
+    self._bert_tokenize()
     self._dump_lines(str(max_segment_len) + ".jsonl", file_handle)
 
   def dump_to_fpd(self, directory):
@@ -246,25 +247,7 @@ class Document(object):
       tokenized_sents = TokenizedSentences(
         self.token_sentences, max_segment_len, self.speakers)
       self.tokenized_sentences[max_segment_len] = tokenized_sents
-
-      # update clusters to index into tokenized
-      # todo not totally clear to me why this is max-seg-length-dependent?
-      offsets = [-1] * sum(map(len, self.token_sentences))
-      for s in tokenized_sents.subtoken_map:
-        offsets[s] += 1
-      offsets_cumulative = np.cumsum(offsets).tolist()
-
-      new_clusters = []
-      for c in self.clusters:
-        new_c = []
-        for m in c:
-          new_m = [m[0] + offsets_cumulative[m[0]], m[1] + offsets_cumulative[m[1]]]
-          if offsets[m[0]] > 0:
-            new_m[0] -= offsets[m[0]]
-          new_c.append(new_m)
-        new_clusters.append(new_c)
-
-      self.tokenized_clusters[max_segment_len] = new_clusters
+      self.convert_clusters_bert(max_segment_len)
     self.bert_tokenized = True
 
 
@@ -290,11 +273,26 @@ class Document(object):
         new_clusters.append(cluster)
     self.clusters = new_clusters
 
-  def convert_clusters_bert(self):
-    orig_clusters = self.clusters
-    orig_tokens = self.token_sentences
-    bert_tokens = self.sentences
+  def convert_clusters_bert(self, max_segment_len):
+    assert self.bert_tokenized
 
+    # update clusters to index into tokenized
+    # todo not totally clear to me why this is max-seg-length-dependent?
+    offsets = [-1] * sum(map(len, self.token_sentences))
+    for s in self.tokenized_sentences[max_segment_len].subtoken_map:
+      offsets[s] += 1
+    offsets_cumulative = np.cumsum(offsets).tolist()
+
+    new_clusters = []
+    for c in self.clusters:
+      new_c = []
+      for m in c:
+        new_m = [m[0] + offsets_cumulative[m[0]], m[1] + offsets_cumulative[m[1]]]
+        if offsets[m[0]] > 0:
+          new_m[0] -= offsets[m[0]]
+        new_c.append(new_m)
+      new_clusters.append(new_c)
+    self.tokenized_clusters[max_segment_len] = new_clusters
 
   def dump_to_jsonl(self, max_segment_len):
     assert self.bert_tokenized
