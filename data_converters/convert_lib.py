@@ -181,6 +181,7 @@ class Document(object):
       "mconll": self.dump_to_mconll,
       "512.jsonl": lambda: self.dump_to_jsonl(512),
       "384.jsonl": lambda: self.dump_to_jsonl(384),
+      "128.jsonl": lambda: self.dump_to_jsonl(128),
       "feat": self.dump_to_feat,
       "file_per_doc": self.dump_to_fpd}
 
@@ -247,7 +248,7 @@ class Document(object):
     self.bert_tokenized = True
 
     # update clusters to index into tokenized
-    tokenized_sents = self.tokenized_sentences[512]
+    tokenized_sents = self.tokenized_sentences[128]
     offsets = [-1] * sum(map(len, self.token_sentences))
     for s in tokenized_sents.subtoken_map:
       offsets[s] += 1
