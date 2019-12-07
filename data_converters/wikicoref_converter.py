@@ -1,5 +1,5 @@
 import convert_lib
-import conll_lib
+# import conll_lib
 import collections
 import os
 
