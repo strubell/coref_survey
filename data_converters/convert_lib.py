@@ -242,7 +242,7 @@ class Document(object):
 
   def _bert_tokenize(self):
     self.token_sentences = self.sentences
-    for max_segment_len in [384, 512]:
+    for max_segment_len in [128, 384, 512]:
       tokenized_sents = TokenizedSentences(
         self.token_sentences, max_segment_len, self.speakers)
       self.tokenized_sentences[max_segment_len] = tokenized_sents
