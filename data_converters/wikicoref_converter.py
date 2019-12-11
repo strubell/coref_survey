@@ -46,7 +46,9 @@ def create_dataset(filename):
         curr_doc.clusters = list(all_spans.values())
         all_spans = collections.defaultdict(list)
         dataset.documents.append(curr_doc)
-      curr_doc_id = convert_lib.make_doc_id(dataset_name, line.split()[2:])
+
+      print(line.split()[2:])
+      curr_doc_id = convert_lib.make_doc_id(dataset_name, "-".join(line.split()[2:]))
       curr_doc = convert_lib.Document(curr_doc_id, DUMMY_DOC_PART)
       sentence_offset = 0
     else:
@@ -54,7 +56,7 @@ def create_dataset(filename):
       if not fields:
         if curr_sent:
           add_sentence(curr_doc, curr_sent)
-          coref_spans = conll_lib.get_spans_from_conll(curr_sent_orig_coref_labels,
+          coref_spans = conll_lib.coref_to_spans(curr_sent_orig_coref_labels,
             sentence_offset)
           all_spans = ldd_append(all_spans, coref_spans)
           sentence_offset += len(curr_sent)

@@ -43,13 +43,17 @@ def create_processed_data_dir(path):
       print ("Successfully created the directory %s " % path)
 
 def make_doc_id(dataset, doc_name):
+  if dataset in [DatasetName.gap, DatasetName.wikicoref]:
+    return dataset + '-' +  doc_name
+    
   if type(doc_name) == list:
     doc_name = "_".join(doc_name)
   return "_".join([dataset, doc_name])
 
+NO_SPEAKER = ""
 
-#def make_empty_speakers(sentences):
-#  return [[NO_SPEAKER for token in sent] for sent in sentences]
+def make_empty_speakers(sentences):
+  return [[NO_SPEAKER for token in sent] for sent in sentences]
 
 CLS = "[CLS]"
 SPL = "[SPL]"
@@ -99,7 +103,7 @@ def flatten(l):
   return sum(l, [])
 
 class TokenizedSentences(object):
-  def __init__(self, token_sentences, max_segment_len, speakers):
+  def __init__(self, token_sentences, max_segment_len, speakers, clusters):
     self.token_sentences = token_sentences
     self.max_segment_len = max_segment_len
 
@@ -109,6 +113,7 @@ class TokenizedSentences(object):
       self.per_sentence_speaker.append(sentence_speakers[0])
 
     (self.segments, self.sentence_map, self.subtoken_map, self.speakers) = self._segment_sentences()
+    self.clusters = self.bertify_clusters(clusters, self.subtoken_map)
 
   
   def _segment_sentences(self):
@@ -149,6 +154,26 @@ class TokenizedSentences(object):
     speakers.append([SPL] + segment_speakers + [SPL])
 
     return (sentences, sentence_map, subtoken_map, speakers)
+
+  def bertify_clusters(self, clusters, subtoken_map):
+    reverse_token_map = {}
+    current_start = 0
+    current_end = None
+    for subtoken_idx, token_idx in enumerate(subtoken_map[:-1]):
+      maybe_next_token_idx = subtoken_map[subtoken_idx + 1]
+      if token_idx != maybe_next_token_idx:
+        reverse_token_map[token_idx] = (current_start, subtoken_idx)
+        current_start = subtoken_idx + 1
+    reverse_token_map[subtoken_map[-1]] = (current_start, len(subtoken_map) - 1)
+    bertified_clusters = []
+    for cluster in clusters:
+      new_cluster = []
+      for start, end in cluster:
+        new_cluster.append(
+          (reverse_token_map[start][0], reverse_token_map[end][1]))
+      bertified_clusters.append(new_cluster)
+    return bertified_clusters  
+        
 
 class LabelSequences(object):
   WORD = "WORD"
@@ -243,11 +268,10 @@ class Document(object):
 
   def _bert_tokenize(self):
     self.token_sentences = self.sentences
+    self.token_clusters = self.clusters
     for max_segment_len in [128, 384, 512]:
-      tokenized_sents = TokenizedSentences(
-        self.token_sentences, max_segment_len, self.speakers)
-      self.tokenized_sentences[max_segment_len] = tokenized_sents
-      self.convert_clusters_bert(max_segment_len)
+      self.tokenized_sentences[max_segment_len] = TokenizedSentences(
+        self.token_sentences, max_segment_len, self.speakers, self.token_clusters)
     self.bert_tokenized = True
 
 
