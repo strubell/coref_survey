@@ -139,11 +139,19 @@ class TokenizedSentences(object):
         segment_sentence_map += sentence_sentence_map
         segment_subtoken_map += sentence_subtoken_map
         segment_speakers += sentence_speakers
-      elif not segment_subtoken_map:
-        # if segment_subtoken_map is empty here, that means that the sentence was longer
-        # than max_segment_len, so we need to cut this segment mid-sentence
-        print("max len: {}; sent len: {}; seg len: {}".format(self.max_segment_len, len(sentence_subtokens), len(segment_subtokens)))
       else:
+        if not segment_subtoken_map:
+          # if segment_subtoken_map is empty here, that means that the sentence was longer
+          # than max_segment_len, so we need to cut this segment mid-sentence
+          segment_subtokens += sentence_subtokens[:self.max_segment_len]
+          segment_sentence_map += sentence_sentence_map[:self.max_segment_len]
+          segment_subtoken_map += sentence_subtoken_map[:self.max_segment_len]
+          segment_speakers += sentence_speakers[:self.max_segment_len]
+          sentence_subtokens = sentence_subtokens[self.max_segment_len:]
+          sentence_sentence_map = sentence_sentence_map[self.max_segment_len:]
+          sentence_subtoken_map = sentence_subtoken_map[self.max_segment_len:]
+          sentence_speakers = sentence_speakers[self.max_segment_len:]
+
         sentences.append([CLS] + segment_subtokens + [SEP])
         sentence_map += segment_sentence_map 
         subtoken_map += [previous_token] + segment_subtoken_map + [segment_subtoken_map[-1]]
