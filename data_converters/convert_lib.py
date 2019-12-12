@@ -125,7 +125,7 @@ class TokenizedSentences(object):
     previous_token = 0
     for i, sentence in enumerate(self.token_sentences):
       subword_list = [TOKENIZER.tokenize(token) for token in sentence]
-      subword_to_word = flatten([[local_token_idx + running_token_idx]* len(token_subwords)
+      subword_to_word = flatten([[local_token_idx + running_token_idx] * len(token_subwords)
                             for local_token_idx, token_subwords in enumerate(subword_list)])
       running_token_idx += len(subword_list)
 
@@ -139,6 +139,10 @@ class TokenizedSentences(object):
         segment_sentence_map += sentence_sentence_map
         segment_subtoken_map += sentence_subtoken_map
         segment_speakers += sentence_speakers
+      elif not segment_subtoken_map:
+        # if segment_subtoken_map is empty here, that means that the sentence was longer
+        # than max_segment_len, so we need to cut this segment mid-sentence
+        print("max len: {}; sent len: {}; seg len: {}".format(self.max_segment_len, len(sentence_subtokens), len(segment_subtokens)))
       else:
         sentences.append([CLS] + segment_subtokens + [SEP])
         sentence_map += segment_sentence_map 
