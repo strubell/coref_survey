@@ -87,5 +87,5 @@ def convert(data_home):
   convert_lib.create_processed_data_dir(mult_directory)
   # for split, dataset in preco_datasets.items():
   converted_dataset.remove_singletons()
-  convert_lib.write_converted(converted_dataset, mult_directory + "/test")
+  convert_lib.write_converted(converted_dataset, mult_directory)
 
