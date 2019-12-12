@@ -113,8 +113,8 @@ class TokenizedSentences(object):
       self.per_sentence_speaker.append(sentence_speakers[0])
 
     (self.segments, self.sentence_map, self.subtoken_map, self.speakers) = self._segment_sentences()
-    # self.clusters = self.bertify_clusters(clusters, self.subtoken_map)
-    self.clusters = self.convert_clusters_bert(clusters, self.subtoken_map)
+    self.clusters = self.bertify_clusters(clusters, self.subtoken_map)
+    # self.clusters = self.convert_clusters_bert(clusters, self.subtoken_map)
 
   
   def _segment_sentences(self):
