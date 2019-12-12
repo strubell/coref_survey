@@ -113,7 +113,8 @@ class TokenizedSentences(object):
       self.per_sentence_speaker.append(sentence_speakers[0])
 
     (self.segments, self.sentence_map, self.subtoken_map, self.speakers) = self._segment_sentences()
-    self.clusters = self.bertify_clusters(clusters, self.subtoken_map)
+    # self.clusters = self.bertify_clusters(clusters, self.subtoken_map)
+    self.clusters = self.convert_clusters_bert(clusters, self.subtoken_map)
 
   
   def _segment_sentences(self):
@@ -121,6 +122,7 @@ class TokenizedSentences(object):
     (segment_subtokens, segment_sentence_map, segment_subtoken_map,
      segment_speakers) = ([], [], [], [])
     running_token_idx = 0
+    previous_token = 0
     for i, sentence in enumerate(self.token_sentences):
       subword_list = [TOKENIZER.tokenize(token) for token in sentence]
       subword_to_word = flatten([[local_token_idx + running_token_idx]* len(token_subwords)
@@ -140,8 +142,9 @@ class TokenizedSentences(object):
       else:
         sentences.append([CLS] + segment_subtokens + [SEP])
         sentence_map += segment_sentence_map 
-        subtoken_map += [0] + segment_subtoken_map + [segment_subtoken_map[-1]]
+        subtoken_map += [previous_token] + segment_subtoken_map + [segment_subtoken_map[-1]]
         speakers.append([SPL] + segment_speakers + [SPL])
+        previous_token = segment_subtoken_map[-1]
 
         (segment_subtokens, segment_sentence_map, segment_subtoken_map,
          segment_speakers) = (sentence_subtokens, sentence_sentence_map,
@@ -150,7 +153,7 @@ class TokenizedSentences(object):
 
     sentences.append([CLS] + segment_subtokens + [SEP])
     sentence_map += segment_sentence_map 
-    subtoken_map += [0] + segment_subtoken_map + [segment_subtoken_map[-1]]
+    subtoken_map += [previous_token] + segment_subtoken_map + [segment_subtoken_map[-1]]
     speakers.append([SPL] + segment_speakers + [SPL])
 
     return (sentences, sentence_map, subtoken_map, speakers)
@@ -172,7 +175,28 @@ class TokenizedSentences(object):
         new_cluster.append(
           (reverse_token_map[start][0], reverse_token_map[end][1]))
       bertified_clusters.append(new_cluster)
-    return bertified_clusters  
+    return bertified_clusters
+
+  def convert_clusters_bert(self, clusters, subtoken_map):
+    # update clusters to index into tokenized
+    # an offset for each original token; at least 1 will be added to it
+    # print("clusters", clusters)
+    offsets = [-1] * sum(map(len, self.token_sentences))
+    for s in subtoken_map:
+      offsets[s] += 1
+    offsets_cumulative = np.cumsum(offsets).tolist()
+
+    new_clusters = []
+    for c in clusters:
+      new_c = []
+      for m in c:
+        new_m = [m[0] + offsets_cumulative[m[0]], m[1] + offsets_cumulative[m[1]]]
+        if offsets[m[0]] > 0:
+          new_m[0] -= offsets[m[0]]
+        new_c.append(new_m)
+      new_clusters.append(new_c)
+    # print("new clusters", new_clusters)
+    return new_clusters
         
 
 class LabelSequences(object):
@@ -197,8 +221,6 @@ class Document(object):
 
     self.bert_tokenized = False
     self.tokenized_sentences = {}
-    self.tokenized_clusters = {}
-
 
     self.label_sequences = {}
     self.label_sequences_verified = False
@@ -297,24 +319,24 @@ class Document(object):
         new_clusters.append(cluster)
     self.clusters = new_clusters
 
-  def convert_clusters_bert(self, max_segment_len):
-    # update clusters to index into tokenized
-    # todo not totally clear to me why this is max-seg-length-dependent?
-    offsets = [-1] * sum(map(len, self.token_sentences))
-    for s in self.tokenized_sentences[max_segment_len].subtoken_map:
-      offsets[s] += 1
-    offsets_cumulative = np.cumsum(offsets).tolist()
-
-    new_clusters = []
-    for c in self.clusters:
-      new_c = []
-      for m in c:
-        new_m = [m[0] + offsets_cumulative[m[0]], m[1] + offsets_cumulative[m[1]]]
-        if offsets[m[0]] > 0:
-          new_m[0] -= offsets[m[0]]
-        new_c.append(new_m)
-      new_clusters.append(new_c)
-    self.tokenized_clusters[max_segment_len] = new_clusters
+  # def convert_clusters_bert(self, max_segment_len):
+  #   # update clusters to index into tokenized
+  #   # todo not totally clear to me why this is max-seg-length-dependent?
+  #   offsets = [-1] * sum(map(len, self.token_sentences))
+  #   for s in self.tokenized_sentences[max_segment_len].subtoken_map:
+  #     offsets[s] += 1
+  #   offsets_cumulative = np.cumsum(offsets).tolist()
+  #
+  #   new_clusters = []
+  #   for c in self.clusters:
+  #     new_c = []
+  #     for m in c:
+  #       new_m = [m[0] + offsets_cumulative[m[0]], m[1] + offsets_cumulative[m[1]]]
+  #       if offsets[m[0]] > 0:
+  #         new_m[0] -= offsets[m[0]]
+  #       new_c.append(new_m)
+  #     new_clusters.append(new_c)
+  #   self.tokenized_clusters[max_segment_len] = new_clusters
 
   def dump_to_jsonl(self, max_segment_len):
     assert self.bert_tokenized
@@ -327,7 +349,7 @@ class Document(object):
           "sentence_map": self.tokenized_sentences[max_segment_len].sentence_map,
           "subtoken_map": self.tokenized_sentences[max_segment_len].subtoken_map,
           "speakers": self.tokenized_sentences[max_segment_len].speakers,
-          "clusters": self.tokenized_clusters[max_segment_len],
+          "clusters": self.tokenized_sentences[max_segment_len].clusters,
           "parse_spans": self.parse_spans,
           "pos": self.pos
         })]

@@ -83,3 +83,9 @@ def convert(data_home):
   converted_dataset = create_dataset(test_set)
   convert_lib.write_converted(converted_dataset, output_directory)
 
+  mult_directory = output_directory.replace(convert_lib.DatasetName.wikicoref, "wikicoref_mult")
+  convert_lib.create_processed_data_dir(mult_directory)
+  # for split, dataset in preco_datasets.items():
+  converted_dataset.remove_singletons()
+  convert_lib.write_converted(converted_dataset, mult_directory + "/test")
+
