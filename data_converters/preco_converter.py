@@ -68,6 +68,34 @@ def create_dataset(filename, id_prefix=PRECO, id_str="id", cluster_str="mention_
 
   return dataset
 
+
+def create_dataset_conll(filename, id_prefix=PRECO, id_str="id", cluster_str="mention_clusters"):
+  dataset = convert_lib.Dataset(PRECO)
+
+  lines = get_lines_from_file(filename)
+  for line in tqdm.tqdm(lines):
+    orig_document = json.loads(line)
+    new_document = convert_lib.Document(
+      convert_lib.make_doc_id(id_prefix, orig_document[id_str]), DUMMY_DOC_PART)
+    sentence_offsets = []
+    token_count = 0
+
+    # new_sentences, sentence_index_map, sentence_offsets = condense_sentences(orig_document["sentences"])
+
+    new_document.sentences = orig_document["sentences"]
+    new_document.speakers = make_empty_speakers(new_document.sentences)
+    new_document.clusters = orig_document[cluster_str]
+    # for cluster in orig_document[cluster_str]:
+    #   new_cluster = []
+    #   for sentence, begin, end in cluster:
+    #     modified_sentence = sentence_index_map[sentence]
+    #     new_cluster.append([sentence_offsets[modified_sentence] + begin,
+    #                         sentence_offsets[modified_sentence] + end - 1])
+    #   new_document.clusters.append(new_cluster)
+    dataset.documents.append(new_document)
+
+  return dataset
+
 def resplit(preco_directory, resplit_directory):
   random.seed(43)
   train_lines_file = preco_directory + "/train.jsonl"
@@ -105,7 +133,7 @@ def convert_not_preco(data_home):
   for split in [convert_lib.DatasetSplit.dev]:
     input_filename = os.path.join(data_home, split + "." +
                                   convert_lib.FormatName.jsonl)
-    converted_dataset = create_dataset(input_filename, "conll12", "document_id", "clusters")
+    converted_dataset = create_dataset_conll(input_filename, "conll12", "document_id", "clusters")
     convert_lib.write_converted(converted_dataset, output_directory + "/" + split)
     preco_datasets[split] = converted_dataset
 
