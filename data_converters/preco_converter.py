@@ -40,7 +40,7 @@ def condense_sentences(sentences):
 def make_empty_speakers(sentences):
   return [["" for token in sent] for sent in sentences]
 
-def create_dataset(filename, id_prefix=PRECO, id_str="id", cluster_str="mention_clusters"):
+def create_dataset(filename):
 
   dataset = convert_lib.Dataset(PRECO)
 
@@ -48,7 +48,7 @@ def create_dataset(filename, id_prefix=PRECO, id_str="id", cluster_str="mention_
   for line in tqdm.tqdm(lines):
     orig_document = json.loads(line)
     new_document = convert_lib.Document(
-        convert_lib.make_doc_id(id_prefix, orig_document[id_str]), DUMMY_DOC_PART)
+        convert_lib.make_doc_id(PRECO, orig_document["id"]), DUMMY_DOC_PART)
     sentence_offsets = []
     token_count = 0
   
@@ -57,41 +57,13 @@ def create_dataset(filename, id_prefix=PRECO, id_str="id", cluster_str="mention_
     new_document.sentences = new_sentences
     new_document.speakers = make_empty_speakers(new_document.sentences)
     new_document.clusters = []
-    for cluster in orig_document[cluster_str]:
+    for cluster in orig_document["mention_clusters"]:
         new_cluster = []
         for sentence, begin, end in cluster:
           modified_sentence = sentence_index_map[sentence]
           new_cluster.append([sentence_offsets[modified_sentence] + begin,
           sentence_offsets[modified_sentence] + end - 1])
         new_document.clusters.append(new_cluster)
-    dataset.documents.append(new_document)
-
-  return dataset
-
-
-def create_dataset_conll(filename, id_prefix=PRECO, id_str="id", cluster_str="mention_clusters"):
-  dataset = convert_lib.Dataset(PRECO)
-
-  lines = get_lines_from_file(filename)
-  for line in tqdm.tqdm(lines):
-    orig_document = json.loads(line)
-    new_document = convert_lib.Document(
-      convert_lib.make_doc_id(id_prefix, orig_document[id_str]), DUMMY_DOC_PART)
-    sentence_offsets = []
-    token_count = 0
-
-    # new_sentences, sentence_index_map, sentence_offsets = condense_sentences(orig_document["sentences"])
-
-    new_document.sentences = orig_document["sentences"]
-    new_document.speakers = make_empty_speakers(new_document.sentences)
-    new_document.clusters = orig_document[cluster_str]
-    # for cluster in orig_document[cluster_str]:
-    #   new_cluster = []
-    #   for sentence, begin, end in cluster:
-    #     modified_sentence = sentence_index_map[sentence]
-    #     new_cluster.append([sentence_offsets[modified_sentence] + begin,
-    #                         sentence_offsets[modified_sentence] + end - 1])
-    #   new_document.clusters.append(new_cluster)
     dataset.documents.append(new_document)
 
   return dataset
@@ -116,33 +88,6 @@ def resplit(preco_directory, resplit_directory):
   with open(train_lines_file.replace("train", "dev"), 'r') as f:
     with open(resplit_directory + "/test.jsonl", 'w') as g:
       g.write(f.read())
-
-
-def convert_not_preco(data_home):
-  # preco_directory = data_home
-  # resplit_directory = os.path.join(data_home, "processed", "resplit")
-  # convert_lib.create_processed_data_dir(resplit_directory)
-  output_directory = os.path.join(data_home, "processed")
-
-  # resplit(preco_directory, resplit_directory)
-
-  convert_lib.create_processed_data_dir(output_directory)
-  preco_datasets = {}
-  # for split in [convert_lib.DatasetSplit.train, convert_lib.DatasetSplit.dev,
-  #   convert_lib.DatasetSplit.test]:
-  for split in [convert_lib.DatasetSplit.dev]:
-    input_filename = os.path.join(data_home, split + "." +
-                                  convert_lib.FormatName.jsonl)
-    converted_dataset = create_dataset_conll(input_filename, "conll12", "document_id", "clusters")
-    convert_lib.write_converted(converted_dataset, output_directory + "/" + split)
-    preco_datasets[split] = converted_dataset
-
-  # mult_directory = output_directory.replace(PRECO, "preco_mult")
-  # convert_lib.create_processed_data_dir(mult_directory)
-  # for split, dataset in preco_datasets.items():
-  #   dataset.remove_singletons()
-  #   convert_lib.write_converted(dataset, mult_directory + "/" + split)
-
 
 def convert(data_home):
   preco_directory = os.path.join(data_home, "original", "PreCo_1.0")
@@ -169,4 +114,4 @@ def convert(data_home):
   for split, dataset in preco_datasets.items():
     dataset.remove_singletons()
     convert_lib.write_converted(dataset, mult_directory + "/" + split)
-    
+

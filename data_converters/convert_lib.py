@@ -309,11 +309,12 @@ class Document(object):
         })]
 
 
-def write_converted(dataset, prefix):
+def write_converted(dataset, prefix, dump_fpd=True):
     with open(prefix + ".mconll", 'w') as f:
       dataset.dump_to_mconll(f)
     for max_segment_len in [128, 384, 512]:
       with open(prefix + "." + str(max_segment_len) + ".jsonl", 'w') as f:
         dataset.dump_to_jsonl(max_segment_len, f)
-    # dataset.dump_to_fpd(prefix + "-fpd/")
+    if dump_fpd:
+      dataset.dump_to_fpd(prefix + "-fpd/")
  
