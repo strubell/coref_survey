@@ -23,8 +23,8 @@ def create_dataset(filename):
   for line in tqdm.tqdm(lines):
     orig_document = json.loads(line)
     id = orig_document["document_id"]
-    curr_doc_id = id[1:-2].replace("/", "-")
-    part = str(int(id[-1]))
+    curr_doc_id = id[:-4]
+    part = str(int(id[-3:]))
     new_document = convert_lib.Document(curr_doc_id, part)
     new_document.sentences = orig_document["sentences"]
     new_document.speakers = orig_document["speakers"]
@@ -39,7 +39,7 @@ def convert(data_home):
 
   convert_lib.create_processed_data_dir(output_directory)
   preco_datasets = {}
-  for split in [convert_lib.DatasetSplit.dev]:
+  for split in [convert_lib.DatasetSplit.train, convert_lib.DatasetSplit.dev, convert_lib.DatasetSplit.test]:
     input_filename = os.path.join(data_home, split + "." +
                                   convert_lib.FormatName.jsonl)
     converted_dataset = create_dataset(input_filename)
