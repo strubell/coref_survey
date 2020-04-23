@@ -40,7 +40,7 @@ def condense_sentences(sentences):
 def make_empty_speakers(sentences):
   return [["" for token in sent] for sent in sentences]
 
-def create_dataset(filename):
+def create_dataset(filename, id_prefix=PRECO, id_str="id"):
 
   dataset = convert_lib.Dataset(PRECO)
 
@@ -48,7 +48,7 @@ def create_dataset(filename):
   for line in tqdm.tqdm(lines):
     orig_document = json.loads(line)
     new_document = convert_lib.Document(
-        convert_lib.make_doc_id(PRECO, orig_document["id"]), DUMMY_DOC_PART)
+        convert_lib.make_doc_id(id_prefix, orig_document[id_str]), DUMMY_DOC_PART)
     sentence_offsets = []
     token_count = 0
   
@@ -105,7 +105,7 @@ def convert_not_preco(data_home):
   for split in [convert_lib.DatasetSplit.dev]:
     input_filename = os.path.join(data_home, split + "." +
                                   convert_lib.FormatName.jsonl)
-    converted_dataset = create_dataset(input_filename)
+    converted_dataset = create_dataset(input_filename, "conll12", "document_id")
     convert_lib.write_converted(converted_dataset, output_directory + "/" + split)
     preco_datasets[split] = converted_dataset
 
