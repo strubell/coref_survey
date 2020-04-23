@@ -40,7 +40,7 @@ def condense_sentences(sentences):
 def make_empty_speakers(sentences):
   return [["" for token in sent] for sent in sentences]
 
-def create_dataset(filename, id_prefix=PRECO, id_str="id"):
+def create_dataset(filename, id_prefix=PRECO, id_str="id", cluster_str="mention_clusters"):
 
   dataset = convert_lib.Dataset(PRECO)
 
@@ -57,7 +57,7 @@ def create_dataset(filename, id_prefix=PRECO, id_str="id"):
     new_document.sentences = new_sentences
     new_document.speakers = make_empty_speakers(new_document.sentences)
     new_document.clusters = []
-    for cluster in orig_document["mention_clusters"]:
+    for cluster in orig_document[cluster_str]:
         new_cluster = []
         for sentence, begin, end in cluster:
           modified_sentence = sentence_index_map[sentence]
@@ -105,7 +105,7 @@ def convert_not_preco(data_home):
   for split in [convert_lib.DatasetSplit.dev]:
     input_filename = os.path.join(data_home, split + "." +
                                   convert_lib.FormatName.jsonl)
-    converted_dataset = create_dataset(input_filename, "conll12", "document_id")
+    converted_dataset = create_dataset(input_filename, "conll12", "document_id", "clusters")
     convert_lib.write_converted(converted_dataset, output_directory + "/" + split)
     preco_datasets[split] = converted_dataset
 
