@@ -116,11 +116,16 @@ class TokenizedSentences(object):
     (segment_subtokens, segment_sentence_map, segment_subtoken_map,
      segment_speakers) = ([], [], [], [])
     running_token_idx = 0
+    prev = 0
     for i, sentence in enumerate(self.token_sentences):
       subword_list = [TOKENIZER.tokenize(token) for token in sentence]
-      subword_to_word = flatten([[local_token_idx + running_token_idx]* len(token_subwords)
+      # print("subwords", subword_list)
+
+      # idx_in_sentence + start_of_sentence for each subword in each token
+      subword_to_word = flatten([[local_token_idx + running_token_idx] * len(token_subwords)
                             for local_token_idx, token_subwords in enumerate(subword_list)])
-      running_token_idx += len(subword_list)
+      # print("subword to word", subword_to_word)
+      running_token_idx += len(sentence)
 
       sentence_subtokens = flatten(subword_list)
       sentence_sentence_map = [i] * len(sentence_subtokens)
@@ -134,18 +139,19 @@ class TokenizedSentences(object):
         segment_speakers += sentence_speakers
       else:
         sentences.append([CLS] + segment_subtokens + [SEP])
-        sentence_map += segment_sentence_map 
-        subtoken_map += [0] + segment_subtoken_map + [segment_subtoken_map[-1]]
+        sentence_map += segment_sentence_map
+
+        subtoken_map += [prev] + segment_subtoken_map + [segment_subtoken_map[-1]]
         speakers.append([SPL] + segment_speakers + [SPL])
+        prev = segment_subtoken_map[-1]
 
         (segment_subtokens, segment_sentence_map, segment_subtoken_map,
          segment_speakers) = (sentence_subtokens, sentence_sentence_map,
          sentence_subtoken_map, sentence_speakers)
 
-
     sentences.append([CLS] + segment_subtokens + [SEP])
     sentence_map += segment_sentence_map 
-    subtoken_map += [0] + segment_subtoken_map + [segment_subtoken_map[-1]]
+    subtoken_map += [prev] + segment_subtoken_map + [segment_subtoken_map[-1]]
     speakers.append([SPL] + segment_speakers + [SPL])
 
     return (sentences, sentence_map, subtoken_map, speakers)
@@ -276,13 +282,29 @@ class Document(object):
   def convert_clusters_bert(self, max_segment_len):
     # update clusters to index into tokenized
     # todo not totally clear to me why this is max-seg-length-dependent?
+
+    # each *original* token gets an offset. init w/ -1
     offsets = [-1] * sum(map(len, self.token_sentences))
+
+    # each entry in subtoken_map corresponds to a subtoken, and contains its original token
+    # CLS gets mapped to last final token, SEP gets mapped to current final token
     for s in self.tokenized_sentences[max_segment_len].subtoken_map:
+      # increment each offset by the number of bpe tokens that refer to it
       offsets[s] += 1
+
+    # the actual offsets need to consider all prev offsets
     offsets_cumulative = np.cumsum(offsets).tolist()
+    # print("subtoken map", self.tokenized_sentences[max_segment_len].subtoken_map)
+    # print("sentence map", self.tokenized_sentences[max_segment_len].sentence_map)
+    #
+    # print("token sents", self.token_sentences)
+    # print("segments", self.tokenized_sentences[max_segment_len].segments)
+    # print("offsets", offsets)
+    # print(offsets_cumulative)
 
     new_clusters = []
     for c in self.clusters:
+      # print("old clusters", c)
       new_c = []
       for m in c:
         new_m = [m[0] + offsets_cumulative[m[0]], m[1] + offsets_cumulative[m[1]]]
@@ -290,6 +312,7 @@ class Document(object):
           new_m[0] -= offsets[m[0]]
         new_c.append(new_m)
       new_clusters.append(new_c)
+      # print("clusters", new_clusters)
     self.tokenized_clusters[max_segment_len] = new_clusters
 
   def dump_to_jsonl(self, max_segment_len):
@@ -312,7 +335,8 @@ class Document(object):
 def write_converted(dataset, prefix, dump_fpd=True):
     with open(prefix + ".mconll", 'w') as f:
       dataset.dump_to_mconll(f)
-    for max_segment_len in [128, 384, 512]:
+    # for max_segment_len in [128, 384, 512]:
+    for max_segment_len in [128]:
       with open(prefix + "." + str(max_segment_len) + ".jsonl", 'w') as f:
         dataset.dump_to_jsonl(max_segment_len, f)
     if dump_fpd:
